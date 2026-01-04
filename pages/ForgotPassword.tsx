@@ -1,39 +1,47 @@
-
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { BrainCircuit, Mail, ArrowLeft, Send, CheckCircle, Lock, AlertCircle } from 'lucide-react';
-import { storageService } from '../services/storage';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { FaBrain } from "react-icons/fa";
+import {
+  FiMail,
+  FiLock,
+  FiArrowRight,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiSend,
+  FiArrowLeft,
+} from "react-icons/fi";
+import { storageService } from "../services/storage";
 
 const ForgotPasswordPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [step, setStep] = useState<"email" | "reset" | "success">("email");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     const users = storageService.getStoredUsers();
-    const exists = users.some(u => u.user.email === email);
-    
+    const exists = users.some((u) => u.user.email === email);
+
     if (exists) {
-      setStep('reset');
+      setStep("reset");
     } else {
-      setError('No account found with this email address.');
+      setError("No account found with this email address.");
     }
   };
 
   const handleResetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      return setError('Password must be at least 6 characters.');
+      return setError("Password must be at least 6 characters.");
     }
     const success = storageService.resetPassword(email, newPassword);
     if (success) {
-      setStep('success');
+      setStep("success");
     } else {
-      setError('Something went wrong. Please try again.');
+      setError("Something went wrong. Please try again.");
     }
   };
 
@@ -42,14 +50,16 @@ const ForgotPasswordPage: React.FC = () => {
       <div className="max-w-md w-full bg-white rounded-[48px] shadow-2xl p-12 border border-gray-100">
         <div className="flex justify-center mb-8">
           <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg">
-            <BrainCircuit className="text-white w-8 h-8" />
+            <FaBrain size={20} color="white" />
           </div>
         </div>
 
-        {step === 'email' && (
+        {step === "email" && (
           <>
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Recover Account</h2>
+              <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">
+                Recover Account
+              </h2>
               <p className="text-gray-500 font-medium leading-relaxed">
                 Enter your email to verify your identity.
               </p>
@@ -57,14 +67,16 @@ const ForgotPasswordPage: React.FC = () => {
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <FiAlertCircle size={20} color="red" />
                 <p className="text-sm font-bold text-red-700">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleEmailSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 uppercase tracking-widest ml-1">Email Address</label>
+                <label className="text-sm font-bold text-gray-700 uppercase tracking-widest ml-1">
+                  Email Address
+                </label>
                 <div className="relative group">
                   <input
                     type="email"
@@ -75,7 +87,7 @@ const ForgotPasswordPage: React.FC = () => {
                     placeholder="name@university.edu"
                   />
                   <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                    <Mail className="w-5 h-5" />
+                    <FiMail size={20} />
                   </div>
                 </div>
               </div>
@@ -84,31 +96,36 @@ const ForgotPasswordPage: React.FC = () => {
                 type="submit"
                 className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
               >
-                Verify Email <Send className="w-5 h-5" />
+                Verify Email <FiSend size={20} />
               </button>
             </form>
           </>
         )}
 
-        {step === 'reset' && (
+        {step === "reset" && (
           <>
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">New Password</h2>
+              <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">
+                New Password
+              </h2>
               <p className="text-gray-500 font-medium leading-relaxed">
-                Email verified! Set a new password for <span className="font-bold text-gray-900">{email}</span>.
+                Email verified! Set a new password for{" "}
+                <span className="font-bold text-gray-900">{email}</span>.
               </p>
             </div>
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <FiAlertCircle size={20} color="red" />
                 <p className="text-sm font-bold text-red-700">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleResetSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 uppercase tracking-widest ml-1">New Password</label>
+                <label className="text-sm font-bold text-gray-700 uppercase tracking-widest ml-1">
+                  New Password
+                </label>
                 <div className="relative group">
                   <input
                     type="password"
@@ -128,23 +145,26 @@ const ForgotPasswordPage: React.FC = () => {
                 type="submit"
                 className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
               >
-                Reset Password <Send className="w-5 h-5" />
+                Reset Password <FiSend size={20} />
               </button>
             </form>
           </>
         )}
 
-        {step === 'success' && (
+        {step === "success" && (
           <div className="text-center animate-fade-in">
             <div className="bg-green-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8">
-              <CheckCircle className="w-10 h-10 text-green-500" />
+              <FiCheckCircle size={20} color="green" />
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Password Reset!</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4">
+              Password Reset!
+            </h2>
             <p className="text-gray-500 mb-10 leading-relaxed font-medium">
-              Your password has been successfully updated. You can now log in with your new credentials.
+              Your password has been successfully updated. You can now log in
+              with your new credentials.
             </p>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate("/login")}
               className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl"
             >
               Go to Login
@@ -157,7 +177,7 @@ const ForgotPasswordPage: React.FC = () => {
             to="/login"
             className="flex items-center justify-center gap-2 text-gray-400 font-bold hover:text-indigo-600 transition-all group"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Login
+            <FiArrowLeft size={20} /> Back to Login
           </Link>
         </div>
       </div>
