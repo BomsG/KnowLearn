@@ -247,18 +247,20 @@ const LandingPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-black text-gray-900">
-                  Dr. Amanda Morgan
+                  intelligent assessments
                 </p>
                 <p className="text-[8px] font-bold text-gray-400">
-                  Head of Pedagogy
+                  data-driven learning outcomes
                 </p>
               </div>
             </div>
 
             <div className="absolute top-1/4 -right-12 bg-white p-5 rounded-3xl shadow-2xl">
-              <p className="text-xs font-black text-indigo-600">98% Accuracy</p>
+              <p className="text-xs font-black text-indigo-600">
+                AI Generation
+              </p>
               <p className="text-[10px] font-bold text-gray-400">
-                AI Content Engine
+                expert-level assessments
               </p>
             </div>
           </div>
@@ -352,7 +354,7 @@ const LandingPage: React.FC = () => {
                   {expandedFAQ === i ? (
                     <FiX size={20} />
                   ) : (
-                    <FiChevronRight className="w-5 h-5 rotate-90 md:rotate-0" />
+                    <FiChevronRight size={20} />
                   )}
                 </div>
               </div>
