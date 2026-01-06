@@ -1,5 +1,4 @@
-
-export type QuestionType = 'mcq' | 'short_answer';
+export type QuestionType = "mcq" | "short_answer";
 
 export interface Option {
   id: string;
@@ -25,6 +24,7 @@ export interface Quiz {
   createdAt: string;
   updatedAt: string;
   questions: Question[];
+  bannerUrl?: string;
   themeColor?: string;
   coverImage?: string;
   settings: {

@@ -12,6 +12,7 @@ import {
   FiInfo,
   FiDownloadCloud,
   FiLink,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { HiOutlineAcademicCap, HiOutlineLightBulb } from "react-icons/hi2";
 import { Button, Card, Input } from "../components/UI";
@@ -33,7 +34,9 @@ const QuizPlayerPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isShared, setIsShared] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const timerRef = useRef<any>(null);
 
@@ -47,6 +50,7 @@ const QuizPlayerPage: React.FC = () => {
         setIsImporting(true);
         try {
           // Decode the portable quiz data
+          // Use a more robust decoding method for Base64 with URI components
           const decodedString = decodeURIComponent(atob(encodedData));
           const sharedQuiz: Quiz = JSON.parse(decodedString);
 
@@ -56,15 +60,21 @@ const QuizPlayerPage: React.FC = () => {
           setIsShared(true);
         } catch (err) {
           console.error("Failed to import shared assessment:", err);
-          alert("This shared link seems to be broken or malformed.");
+          setImportError(
+            "The shared link is invalid or the data is corrupted."
+          );
         } finally {
           setIsImporting(false);
+          setIsInitialLoad(false);
         }
       } else if (id) {
         const localQuiz = storageService.getQuizById(id);
         if (localQuiz) {
           setQuiz(localQuiz);
         }
+        setIsInitialLoad(false);
+      } else {
+        setIsInitialLoad(false);
       }
     };
 
@@ -113,34 +123,40 @@ const QuizPlayerPage: React.FC = () => {
     setSubmitted(true);
   };
 
-  if (isImporting) {
+  // Show a blank or loading state while the initial check is running
+  if (isInitialLoad || isImporting) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 text-center animate-pulse">
         <div className="w-24 h-24 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin mb-8" />
         <h2 className="text-2xl font-black text-gray-900 mb-2">
           Syncing Assessment...
         </h2>
         <p className="text-gray-400 font-medium">
-          Fetching portable data from the shared link.
+          Please wait while we prepare your session.
         </p>
       </div>
     );
   }
 
+  // Only show error if we've finished loading and still have no quiz
   if (!quiz)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 text-center">
-        <div className="bg-red-50 text-red-500 w-20 h-20 rounded-3xl flex items-center justify-center mb-8">
-          <FiX size={20} />
+        <div className="bg-red-50 text-red-500 w-24 h-24 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl shadow-red-100">
+          <FiAlertCircle className="w-12 h-12" />
         </div>
-        <h2 className="text-3xl font-black text-gray-900 mb-4">
+        <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">
           Assessment Not Found
         </h2>
-        <p className="text-gray-400 font-medium mb-10 max-w-sm mx-auto">
-          This assessment doesn't exist in your library. Please ask the creator
-          for a fresh share link.
+        <p className="text-gray-400 font-medium mb-10 max-w-sm mx-auto leading-relaxed">
+          {importError ||
+            "This assessment doesn't exist in your library and no shared data was found in the link."}
         </p>
-        <Button onClick={() => navigate("/dashboard")}>
+        <Button
+          onClick={() => navigate("/dashboard")}
+          size="lg"
+          className="shadow-lg"
+        >
           Return to Dashboard
         </Button>
       </div>
@@ -165,7 +181,7 @@ const QuizPlayerPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-8 text-green-50 font-black text-8xl pointer-events-none select-none">
             DONE
           </div>
-          <FiThumbsUp size={20} color="green" />
+          <FiThumbsUp className="relative z-10 w-16 h-16 text-green-500 mx-auto mb-8" />
           <h2 className="relative z-10 text-3xl font-black mb-2">Great Job!</h2>
           <p className="relative z-10 text-gray-400 font-medium mb-10">
             Assessment complete for {respondentName}.
@@ -213,26 +229,30 @@ const QuizPlayerPage: React.FC = () => {
   if (!isStarted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-        <Card className="max-w-xl w-full overflow-hidden">
+        <Card className="max-w-xl w-full overflow-hidden shadow-2xl">
           {quiz.coverImage && (
-            <img src={quiz.coverImage} className="w-full h-48 object-cover" />
+            <img
+              src={quiz.coverImage}
+              className="w-full h-48 object-cover"
+              alt="Cover"
+            />
           )}
           <div className="p-12 text-center relative">
             {isShared && (
-              <div className="absolute top-8 right-8 flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full text-[9px] font-black text-indigo-600 uppercase tracking-widest">
-                <FiLink size={20} /> Shared Link
+              <div className="absolute top-8 right-8 flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full text-[9px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100 animate-pulse">
+                <FiLink className="w-3 h-3" /> Shared Access
               </div>
             )}
             <div
               className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl"
               style={{ backgroundColor: themeColor }}
             >
-              <HiOutlineAcademicCap size={20} color="white" />
+              <HiOutlineAcademicCap className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter leading-tight">
               {quiz.title}
             </h1>
-            <p className="text-gray-500 font-medium mb-12">
+            <p className="text-gray-500 font-medium mb-12 leading-relaxed">
               {quiz.description ||
                 "Take this academic assessment to test your knowledge grip."}
             </p>
@@ -245,10 +265,13 @@ const QuizPlayerPage: React.FC = () => {
                 onChange={(e) => setRespondentName(e.target.value)}
                 autoFocus
               />
+              <p className="text-[9px] font-bold text-gray-300 mt-3 text-left ml-1 uppercase tracking-widest">
+                Responses are stored in your browser session.
+              </p>
             </div>
 
             <Button
-              className="w-full py-5 text-lg shadow-xl shadow-indigo-100"
+              className="w-full py-5 text-lg shadow-xl shadow-indigo-100 hover:-translate-y-1"
               size="lg"
               onClick={handleStart}
               style={{ backgroundColor: themeColor }}
@@ -269,10 +292,10 @@ const QuizPlayerPage: React.FC = () => {
         <div className="flex items-center gap-6">
           <Button
             variant="ghost"
-            className="!p-2"
+            className="!p-2 hover:bg-red-50 hover:text-red-500"
             onClick={() => navigate("/dashboard")}
           >
-            <FiX size={20} />
+            <FiX className="w-6 h-6" />
           </Button>
           <div className="hidden sm:block">
             <h2 className="text-sm font-black text-gray-900 line-clamp-1 max-w-[200px]">
@@ -287,15 +310,15 @@ const QuizPlayerPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="bg-gray-50 px-5 py-2.5 rounded-2xl flex items-center gap-3 text-sm font-mono font-black border border-gray-100">
-            <FiClock color="blue" /> {Math.floor(timer / 60)}:
+          <div className="bg-gray-50 px-5 py-2.5 rounded-2xl flex items-center gap-3 text-sm font-mono font-black border border-gray-100 shadow-inner">
+            <FiClock style={{ color: themeColor }} /> {Math.floor(timer / 60)}:
             {(timer % 60).toString().padStart(2, "0")}
           </div>
         </div>
       </header>
 
       <div className="flex-grow max-w-4xl mx-auto w-full px-6 py-12 lg:py-20">
-        <Card className="p-8 md:p-16">
+        <Card className="p-8 md:p-16 shadow-xl">
           <div className="flex items-center gap-3 mb-8">
             <span
               className="text-[10px] font-black uppercase tracking-[0.3em]"
@@ -338,7 +361,7 @@ const QuizPlayerPage: React.FC = () => {
                     }`}
                   >
                     {answers[currentQ.id] === opt.id && (
-                      <FiCheck color="white" />
+                      <FiCheck className="text-white" />
                     )}
                   </div>
                 </button>
@@ -363,7 +386,10 @@ const QuizPlayerPage: React.FC = () => {
           {quiz.settings.requireConfidence && (
             <div className="bg-gray-50 p-8 md:p-12 rounded-[2.5rem] border border-gray-100">
               <div className="flex items-center gap-3 mb-8 text-gray-400">
-                <HiOutlineLightBulb size={20} color="blue" />
+                <HiOutlineLightBulb
+                  className="w-5 h-5"
+                  style={{ color: themeColor }}
+                />
                 <span className="text-xs font-black uppercase tracking-widest">
                   Confidence Level
                 </span>
