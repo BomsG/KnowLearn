@@ -56,9 +56,7 @@ const CreateQuizPage: React.FC = () => {
         err.message === "API_KEY_INVALID" ||
         err.message?.includes("Requested entity was not found")
       ) {
-        setError(
-          "AI connection failed. Please ensure a valid API key is configured."
-        );
+        setError("Feature in Progress");
       } else {
         setError(
           err.message || "The magic failed. Please try a different topic."
@@ -196,10 +194,6 @@ const CreateQuizPage: React.FC = () => {
                   >
                     Spark Magic <Sparkles className="w-6 h-6" />
                   </button>
-
-                  <p className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">
-                    Powered by Gemini 3 Flash
-                  </p>
                 </form>
               )}
             </div>
