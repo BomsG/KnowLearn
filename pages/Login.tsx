@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User } from "../types";
-import { storageService } from "../services/storage";
+import { dbService } from "../services/db";
 import { FaBrain } from "react-icons/fa";
-import { FiMail, FiLock, FiArrowRight, FiAlertCircle } from "react-icons/fi";
+import { FiMail, FiLock, FiArrowRight, FiAlertCircle, FiEye, FiEyeOff } from "react-icons/fi";
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -13,19 +13,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const validatedUser = storageService.validateUser(email, password);
-
-    if (validatedUser) {
+    try {
+      const validatedUser = await dbService.signIn(email, password);
       onLogin(validatedUser);
       navigate("/dashboard");
-    } else {
-      setError("Invalid email or password. Only registered users can sign in.");
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -124,24 +128,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </div>
               <div className="relative group">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-[20px] focus:bg-white focus:border-indigo-600 outline-none transition-all pl-14 text-gray-900 font-medium shadow-sm"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-[20px] focus:bg-white focus:border-indigo-600 outline-none transition-all pl-14 pr-12 text-gray-900 font-medium shadow-sm"
                   placeholder="••••••••"
                 />
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                  <Lock className="w-5 h-5" />
+                  <FiLock size={20} />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
+              disabled={loading}
+              className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              Sign In <FiArrowRight size={20} />
+              {loading ? "Signing In..." : <>Sign In <FiArrowRight size={20} /></>}
             </button>
           </form>
 

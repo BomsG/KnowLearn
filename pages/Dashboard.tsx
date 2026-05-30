@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Quiz, User } from "../types";
-import { storageService } from "../services/storage";
+import { dbService } from "../services/db";
 import {
   FiPlus,
   FiSearch,
@@ -31,16 +31,18 @@ const DashboardPage: React.FC<DashboardProps> = ({ user }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setQuizzes(
-      storageService.getQuizzes().filter((q) => q.creatorId === user.id)
-    );
+    dbService.getQuizzes(user.id).then(setQuizzes);
   }, [user.id]);
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Delete this assessment permanently?")) {
-      storageService.deleteQuiz(id);
-      setQuizzes((prev) => prev.filter((q) => q.id !== id));
+      try {
+        await dbService.deleteQuiz(id);
+        setQuizzes((prev) => prev.filter((q) => q.id !== id));
+      } catch (err: any) {
+        alert(err.message || "Failed to delete assessment.");
+      }
     }
   };
 

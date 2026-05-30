@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Quiz, ResponseEntry, QuizResponse } from "../types";
-import { storageService } from "../services/storage";
+import { dbService } from "../services/db";
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -24,7 +24,7 @@ const QuizPlayerPage: React.FC = () => {
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [respondentName, setRespondentName] = useState(
-    storageService.getCurrentUser()?.name || ""
+    dbService.getCurrentUser ? "" : "" // We will load from localStorage via service below
   );
   const [isStarted, setIsStarted] = useState(false);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -41,6 +41,14 @@ const QuizPlayerPage: React.FC = () => {
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
+    // Set respondent name if a user is logged in locally/remotely
+    const currUser = JSON.parse(localStorage.getItem('knowlearn_current_user') || 'null');
+    if (currUser?.name) {
+      setRespondentName(currUser.name);
+    }
+  }, []);
+
+  useEffect(() => {
     const initQuiz = async () => {
       // Check for portable data in URL
       const searchParams = new URLSearchParams(location.search);
@@ -54,8 +62,8 @@ const QuizPlayerPage: React.FC = () => {
           const decodedString = decodeURIComponent(atob(encodedData));
           const sharedQuiz: Quiz = JSON.parse(decodedString);
 
-          // Persist to user's local storage so it appears in their library
-          storageService.saveQuiz(sharedQuiz);
+          // Persist to user's local storage or Supabase so it appears in their library
+          await dbService.saveQuiz(sharedQuiz);
           setQuiz(sharedQuiz);
           setIsShared(true);
         } catch (err) {
@@ -68,7 +76,7 @@ const QuizPlayerPage: React.FC = () => {
           setIsInitialLoad(false);
         }
       } else if (id) {
-        const localQuiz = storageService.getQuizById(id);
+        const localQuiz = await dbService.getQuizById(id);
         if (localQuiz) {
           setQuiz(localQuiz);
         }
@@ -93,7 +101,7 @@ const QuizPlayerPage: React.FC = () => {
     setIsStarted(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!quiz) return;
     const entries: ResponseEntry[] = quiz.questions.map((q) => ({
       questionId: q.id,
@@ -119,8 +127,12 @@ const QuizPlayerPage: React.FC = () => {
       }, 0),
     };
 
-    storageService.saveResponse(response);
-    setSubmitted(true);
+    try {
+      await dbService.saveResponse(response);
+      setSubmitted(true);
+    } catch (err: any) {
+      alert(err.message || "Failed to submit assessment response.");
+    }
   };
 
   // Show a blank or loading state while the initial check is running

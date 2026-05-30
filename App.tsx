@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   HashRouter,
   Routes,
@@ -18,6 +18,8 @@ import AnalyticsPage from "./pages/Analytics";
 import ProfilePage from "./pages/Profile";
 import Navbar from "./components/Navbar";
 import { storageService } from "./services/storage";
+import { dbService } from "./services/db";
+import { supabase, isSupabaseConfigured } from "./services/supabase";
 import { User } from "./types";
 
 const AppContent: React.FC = () => {
@@ -26,18 +28,69 @@ const AppContent: React.FC = () => {
   );
   const location = useLocation();
 
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      // 1. Get initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          supabase.from('profiles').select('*').eq('id', session.user.id).single()
+            .then(({ data }) => {
+              if (data) {
+                const u: User = {
+                  id: data.id,
+                  email: data.email,
+                  name: data.name,
+                  avatar: data.avatar_url || undefined
+                };
+                storageService.setCurrentUser(u);
+                setUser(u);
+              }
+            });
+        } else {
+          setUser(null);
+        }
+      });
+
+      // 2. Listen to auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          if (data) {
+            const u: User = {
+              id: data.id,
+              email: data.email,
+              name: data.name,
+              avatar: data.avatar_url || undefined
+            };
+            storageService.setCurrentUser(u);
+            setUser(u);
+          }
+        } else {
+          storageService.setCurrentUser(null);
+          setUser(null);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, []);
+
   const handleLogin = (u: User) => {
     storageService.setCurrentUser(u);
     setUser(u);
   };
 
-  const handleUpdateUser = (u: User) => {
-    storageService.updateProfile(u);
-    setUser({ ...u });
+  const handleUpdateUser = async (u: User) => {
+    try {
+      await dbService.updateProfile(u);
+      setUser({ ...u });
+    } catch (err: any) {
+      alert(err.message || "Failed to update profile.");
+    }
   };
 
-  const handleLogout = () => {
-    storageService.setCurrentUser(null);
+  const handleLogout = async () => {
+    await dbService.signOut();
     setUser(null);
   };
 

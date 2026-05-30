@@ -1,8 +1,8 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { storageService } from '../services/storage';
-import { QuizResponse, Question } from '../types';
+import { dbService } from '../services/db';
+import { QuizResponse, Question, Quiz } from '../types';
 import { 
   BarChart, 
   Bar, 
@@ -40,9 +40,26 @@ const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f59e0b'];
 const AnalyticsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedResponse, setSelectedResponse] = useState<QuizResponse | null>(null);
-  
-  const quiz = useMemo(() => id ? storageService.getQuizById(id) : null, [id]);
-  const responses = useMemo(() => id ? storageService.getResponsesForQuiz(id) : [], [id]);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [responses, setResponses] = useState<QuizResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      Promise.all([
+        dbService.getQuizById(id),
+        dbService.getResponsesForQuiz(id)
+      ]).then(([q, resp]) => {
+        if (q) setQuiz(q);
+        setResponses(resp);
+        setLoading(false);
+      }).catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+    }
+  }, [id]);
 
   const stats = useMemo(() => {
     if (responses.length === 0) return null;
@@ -70,6 +87,16 @@ const AnalyticsPage: React.FC = () => {
       confidenceChartData
     };
   }, [responses, quiz]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 text-center">
+        <div className="w-24 h-24 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin mb-8" />
+        <h2 className="text-2xl font-black text-gray-900 mb-2">Analyzing Insights</h2>
+        <p className="text-gray-500 font-medium max-w-sm">Generating knowledge mapping heatmap and compiling concept success rates...</p>
+      </div>
+    );
+  }
 
   if (!quiz) return <div className="p-10 text-center font-black">Assessment not found.</div>;
 

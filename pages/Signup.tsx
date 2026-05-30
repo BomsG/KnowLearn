@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '../types';
-import { storageService } from '../services/storage';
-import { BrainCircuit, Mail, Lock, ArrowRight, User as UserIcon, AlertCircle } from 'lucide-react';
+import { dbService } from '../services/db';
+import { BrainCircuit, Mail, Lock, ArrowRight, User as UserIcon, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface SignupPageProps {
   onSignup: (user: User) => void;
@@ -14,25 +14,23 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup }) => {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email,
-      name,
-    };
-
-    const success = storageService.registerUser(newUser, password);
-    
-    if (success) {
+    try {
+      const newUser = await dbService.signUp(email, name, password);
       onSignup(newUser);
       navigate('/dashboard');
-    } else {
-      setError('An account with this email already exists.');
+    } catch (err: any) {
+      setError(err.message || 'An account with this email already exists.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,24 +107,32 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup }) => {
               <label className="text-sm font-bold text-gray-700 uppercase tracking-widest ml-1">Password</label>
               <div className="relative group">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-[20px] focus:bg-white focus:border-indigo-600 outline-none transition-all pl-14 text-gray-900 font-medium shadow-sm"
+                  className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-[20px] focus:bg-white focus:border-indigo-600 outline-none transition-all pl-14 pr-12 text-gray-900 font-medium shadow-sm"
                   placeholder="••••••••"
                 />
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
                   <Lock className="w-5 h-5" />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
+              disabled={loading}
+              className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              Create Account <ArrowRight className="w-6 h-6" />
+              {loading ? "Creating Account..." : <>Create Account <ArrowRight className="w-6 h-6" /></>}
             </button>
           </form>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Quiz, Question, User, Option, QuestionType } from "../types";
-import { storageService } from "../services/storage";
+import { dbService } from "../services/db";
 import { aiService } from "../services/gemini";
 import {
   FiPlus,
@@ -58,19 +58,23 @@ const BuilderPage: React.FC<{ user: User }> = ({ user }) => {
 
   useEffect(() => {
     if (id) {
-      const existing = storageService.getQuizById(id);
-      if (existing) setQuiz(existing);
+      dbService.getQuizById(id).then((existing) => {
+        if (existing) setQuiz(existing);
+      });
     }
   }, [id]);
 
-  const save = () => {
+  const save = async () => {
     if (!quiz.title.trim()) return alert("Please enter a title.");
     setIsSaving(true);
-    storageService.saveQuiz({ ...quiz, updatedAt: new Date().toISOString() });
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await dbService.saveQuiz({ ...quiz, updatedAt: new Date().toISOString() });
       if (!id) navigate(`/builder/${quiz.id}`);
-    }, 500);
+    } catch (err: any) {
+      alert(err.message || "Failed to save assessment.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const addQuestion = (type: QuestionType) => {
